@@ -41,8 +41,11 @@ target_link_libraries(PyMesh PRIVATE
     PyMesh::SparseSolver
     PyMesh::Tetrahedralization
     PyMesh::Triangulation
-    PyMesh::WindingNumber
-    PyMesh::Wires)
+    PyMesh::WindingNumber)
+
+if (Target PyMesh::Wires)
+    target_link_libraries(PyMesh PRIVATE PyMesh::Wires)
+endif()
 
 if (TARGET PyMesh::CGAL)
     target_link_libraries(PyMesh PRIVATE PyMesh::CGAL)
