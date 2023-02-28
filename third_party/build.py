@@ -42,9 +42,10 @@ def get_pymesh_dir():
 
 def build_generic(libname, build_flags="", cleanup=True, optional=False):
     pymesh_dir = get_pymesh_dir();
-    src_dir = "{}/third_party/{}".format(pymesh_dir, libname)
-    if optional and not os.path.exists(src_dir):
-        print("{} not found – skipping.".format(src_dir))
+    src_dir = os.path.join(pymesh_dir, "third_party", libname)
+    cmakelists_path = os.path.join(src_dir, "CMakeLists.txt")
+    if optional and not os.path.exists(os.path.join(src_dir, "CMakeLists.txt")):
+        print("{} not found – skipping.".format(cmakelists_path))
         return
 
     build_dir = os.path.join(pymesh_dir, "third_party", "build", libname);
