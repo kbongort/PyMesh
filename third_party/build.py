@@ -11,10 +11,23 @@ import tempfile
 import shutil
 import sys
 
+class Dep:
+    def __init__(self, name, required=False):
+        self.name = name
+        self.required = required
+
 def get_third_party_dependencies():
-    return ["cgal", "cork", "eigen",
-        "tetgen", "triangle", "qhull", "clipper", "draco",
-        "tbb", "mmg", "json"]
+    return [Dep("cgal"),
+            Dep("cork"),
+            Dep("eigen", required=True),
+            Dep("tetgen"),
+            Dep("triangle"),
+            Dep("qhull"),
+            Dep("clipper"),
+            Dep("draco"),
+            Dep("tbb"),
+            Dep("mmg"),
+            Dep("json", required=True)]
 
 def parse_args():
     parser = argparse.ArgumentParser(__doc__);
@@ -27,8 +40,13 @@ def parse_args():
 def get_pymesh_dir():
     return os.path.join(sys.path[0], "..");
 
-def build_generic(libname, build_flags="", cleanup=True):
+def build_generic(libname, build_flags="", cleanup=True, optional=False):
     pymesh_dir = get_pymesh_dir();
+    src_dir = "{}/third_party/{}".format(pymesh_dir, libname)
+    if optional and not os.path.exists(src_dir):
+        print("{} not found – skipping.".format(src_dir))
+        return
+
     build_dir = os.path.join(pymesh_dir, "third_party", "build", libname);
     if not os.path.exists(build_dir):
         os.makedirs(build_dir);
@@ -53,26 +71,26 @@ def build_generic(libname, build_flags="", cleanup=True):
     if cleanup:
         shutil.rmtree(build_dir)
 
-def build(package, cleanup):
+def build(package, cleanup, optional=False):
     if package == "all":
-        for libname in get_third_party_dependencies():
-            build(libname, cleanup);
+        for dep in get_third_party_dependencies():
+            build(dep.name, cleanup, optional=(not dep.required));
     elif package == "cgal":
         build_generic("cgal",
                 " -DWITH_CGAL_ImageIO=Off -DWITH_CGAL_Qt5=Off",
                 cleanup=cleanup);
     elif package == "clipper":
-        build_generic("Clipper/cpp", cleanup=cleanup);
+        build_generic("Clipper/cpp", cleanup=cleanup, optional=optional);
     elif package == "tbb":
         build_generic("tbb",
                 " -DTBB_BUILD_SHARED=On -DTBB_BUILD_STATIC=Off",
-                cleanup=cleanup);
+                cleanup=cleanup, optional=optional);
     elif package == "json":
         build_generic("json",
                 " -DJSON_BuildTests=Off",
-                cleanup=cleanup);
+                cleanup=cleanup, optional=optional);
     else:
-        build_generic(package, cleanup=cleanup);
+        build_generic(package, cleanup=cleanup, optional=optional);
 
 def main():
     args = parse_args();
