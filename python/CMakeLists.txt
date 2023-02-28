@@ -43,7 +43,7 @@ target_link_libraries(PyMesh PRIVATE
     PyMesh::Triangulation
     PyMesh::WindingNumber)
 
-if (Target PyMesh::Wires)
+if (TARGET PyMesh::Wires)
     target_link_libraries(PyMesh PRIVATE PyMesh::Wires)
 endif()
 
