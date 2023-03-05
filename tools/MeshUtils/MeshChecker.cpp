@@ -20,54 +20,18 @@ using namespace PyMesh;
 MeshChecker::MeshChecker(const MatrixFr& vertices, const MatrixIr& faces,
         const MatrixIr& voxels)
     : m_vertices(vertices), m_faces(faces), m_voxels(voxels) {
+        m_non_manifold_verts = new std::vector<size_t>();
         init_boundary();
         init_boundary_loops();
         init_edge_face_adjacency();
 }
 
+MeshChecker::~MeshChecker() { 
+    delete m_non_manifold_verts;
+}
+
 bool MeshChecker::is_vertex_manifold() const {
-    const size_t num_vertices = m_vertices.rows();
-    const size_t num_faces = m_faces.rows();
-    const size_t vertex_per_face = m_faces.cols();
-
-    std::vector<std::vector<VectorI> > opposite_edges(num_vertices);
-    if (vertex_per_face == 3) {
-        for (size_t i=0; i<num_faces; i++) {
-            const auto& f = m_faces.row(i);
-            opposite_edges[f[0]].push_back(Vector2I(f[1], f[2]));
-            opposite_edges[f[1]].push_back(Vector2I(f[2], f[0]));
-            opposite_edges[f[2]].push_back(Vector2I(f[0], f[1]));
-        }
-    } else if (vertex_per_face == 4) {
-        for (size_t i=0; i<num_faces; i++) {
-            const auto& f = m_faces.row(i);
-            opposite_edges[f[0]].push_back(Vector2I(f[1], f[2]));
-            opposite_edges[f[0]].push_back(Vector2I(f[2], f[3]));
-            opposite_edges[f[1]].push_back(Vector2I(f[2], f[3]));
-            opposite_edges[f[1]].push_back(Vector2I(f[3], f[0]));
-            opposite_edges[f[2]].push_back(Vector2I(f[3], f[0]));
-            opposite_edges[f[2]].push_back(Vector2I(f[0], f[1]));
-            opposite_edges[f[3]].push_back(Vector2I(f[0], f[1]));
-            opposite_edges[f[3]].push_back(Vector2I(f[1], f[2]));
-        }
-    } else {
-        std::stringstream err_msg;
-        err_msg << "Vertex manifold check does not support face with "
-            << vertex_per_face << " vertices.";
-        throw NotImplementedError(err_msg.str());
-    }
-
-    for (const auto& entries: opposite_edges) {
-        if (entries.empty()) continue;
-        try {
-            auto edge_loops = EdgeUtils::chain_edges(
-                    MatrixUtils::rowstack(entries));
-            if (edge_loops.size() != 1) return false;
-        } catch (...) {
-            return false;
-        }
-    }
-    return true;
+    return get_non_manifold_verts().size() == 0;
 }
 
 bool MeshChecker::is_edge_manifold() const {
@@ -301,5 +265,60 @@ void MeshChecker::init_boundary_loops() {
 
 void MeshChecker::init_edge_face_adjacency() {
     m_edge_face_adjacency = EdgeUtils::compute_edge_face_adjacency(m_faces);
+
+    for (auto adj : m_edge_face_adjacency) {
+        if (adj.second.size() != 2) {
+            const auto& e = adj.first.get_ori_data();
+            m_non_manifold_edges.push_back(e);
+        }
+    }
 }
 
+std::vector<size_t> MeshChecker::get_non_manifold_verts() const {
+    if (!m_did_init_non_manifold_verts) {
+        const size_t num_vertices = m_vertices.rows();
+        const size_t num_faces = m_faces.rows();
+        const size_t vertex_per_face = m_faces.cols();
+
+        std::vector<std::vector<VectorI> > opposite_edges(num_vertices);
+        if (vertex_per_face == 3) {
+            for (size_t i=0; i<num_faces; i++) {
+                const auto& f = m_faces.row(i);
+                opposite_edges[f[0]].push_back(Vector2I(f[1], f[2]));
+                opposite_edges[f[1]].push_back(Vector2I(f[2], f[0]));
+                opposite_edges[f[2]].push_back(Vector2I(f[0], f[1]));
+            }
+        } else if (vertex_per_face == 4) {
+            for (size_t i=0; i<num_faces; i++) {
+                const auto& f = m_faces.row(i);
+                opposite_edges[f[0]].push_back(Vector2I(f[1], f[2]));
+                opposite_edges[f[0]].push_back(Vector2I(f[2], f[3]));
+                opposite_edges[f[1]].push_back(Vector2I(f[2], f[3]));
+                opposite_edges[f[1]].push_back(Vector2I(f[3], f[0]));
+                opposite_edges[f[2]].push_back(Vector2I(f[3], f[0]));
+                opposite_edges[f[2]].push_back(Vector2I(f[0], f[1]));
+                opposite_edges[f[3]].push_back(Vector2I(f[0], f[1]));
+                opposite_edges[f[3]].push_back(Vector2I(f[1], f[2]));
+            }
+        } else {
+            std::stringstream err_msg;
+            err_msg << "Vertex manifold check does not support face with "
+                << vertex_per_face << " vertices.";
+            throw NotImplementedError(err_msg.str());
+        }
+
+        for (unsigned i = 0; i < num_vertices; i++) {
+            const auto& entries = opposite_edges[i];
+            try {
+                auto edge_loops = EdgeUtils::chain_edges(
+                        MatrixUtils::rowstack(entries));
+                if (edge_loops.size() != 1) {
+                    m_non_manifold_verts->push_back(i);
+                };
+            } catch (...) {
+                m_non_manifold_verts->push_back(i);
+            }
+        }
+    }
+    return *m_non_manifold_verts;
+}

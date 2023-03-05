@@ -96,6 +96,8 @@ void init_MeshUtils(py::module& m) {
         .def("get_num_boundary_loops", &MeshChecker::get_num_boundary_loops)
         .def("get_boundary_edges", &MeshChecker::get_boundary_edges)
         .def("get_boundary_loops", &MeshChecker::get_boundary_loops)
+        .def("get_non_manifold_edges", &MeshChecker::get_non_manifold_edges)
+        .def("get_non_manifold_verts", &MeshChecker::get_non_manifold_verts)
         .def("get_genus", &MeshChecker::get_genus)
         .def("get_euler_characteristic",
                 &MeshChecker::get_euler_characteristic)

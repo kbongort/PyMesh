@@ -12,6 +12,7 @@ class MeshChecker {
     public:
         MeshChecker(const MatrixFr& vertices, const MatrixIr& faces,
                 const MatrixIr& voxels);
+        ~MeshChecker();
 
     public:
         /**
@@ -60,6 +61,12 @@ class MeshChecker {
             return m_boundary_edges;
         }
 
+        std::vector<Vector2I> get_non_manifold_edges() const {
+            return m_non_manifold_edges;
+        }
+
+        std::vector<size_t> get_non_manifold_verts() const;
+
         std::vector<VectorI> get_boundary_loops() const {
             return m_boundary_loops;
         }
@@ -93,12 +100,16 @@ class MeshChecker {
         void init_boundary();
         void init_boundary_loops();
         void init_edge_face_adjacency();
+        void init_non_manifold_verts();
 
     private:
         MatrixFr m_vertices;
         MatrixIr m_faces;
         MatrixIr m_voxels;
         MatrixIr m_boundary_edges;
+        std::vector<Vector2I> m_non_manifold_edges;
+        bool m_did_init_non_manifold_verts;
+        std::vector<size_t>* m_non_manifold_verts;
         DupletMap<size_t> m_edge_face_adjacency;
         std::vector<VectorI> m_boundary_loops;
         bool m_complex_bd;

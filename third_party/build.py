@@ -34,7 +34,7 @@ def parse_args():
     parser.add_argument("--cleanup", action="store_true",
             help="Clean up the build folder after done.");
     parser.add_argument("package",
-            choices=["all"] + get_third_party_dependencies());
+            choices=["all"] + [dep.name for dep in get_third_party_dependencies()]);
     return parser.parse_args();
 
 def get_pymesh_dir():

@@ -333,6 +333,14 @@ class Mesh(object):
             return self._extra_info.get_boundary_loops()
 
     @property
+    def non_manifold_edges(self):
+        return self._extra_info.get_non_manifold_edges()
+
+    @property
+    def non_manifold_vertices(self):
+        return self._extra_info.get_non_manifold_verts()
+
+    @property
     def euler_characteristic(self):
         return self._extra_info.get_euler_characteristic()
 
